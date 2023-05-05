@@ -19,38 +19,7 @@ export class TrainTicketEstimator {
         let total = 0;
 
         total = this.definePriceDependingAgeAndDate(total, sncfPrice, tripRequest, passengers);
-
-        if (passengers.length == 2) {
-            let cp = false;
-            let mn = false;
-            for (let i = 0; i < passengers.length; i++) {
-                if (passengers[i].discounts.includes(DiscountCard.Couple)) {
-                    cp = true;
-                }
-                if (passengers[i].age < 18) {
-                    mn = true;
-                }
-            }
-            if (cp && !mn) {
-                total -= sncfPrice * 0.2 * 2;
-            }
-        }
-
-        if (passengers.length == 1) {
-            let cp = false;
-            let mn = false;
-            for (let i = 0; i < passengers.length; i++) {
-                if (passengers[i].discounts.includes(DiscountCard.HalfCouple)) {
-                    cp = true;
-                }
-                if (passengers[i].age < 18) {
-                    mn = true;
-                }
-            }
-            if (cp && !mn) {
-                total -= sncfPrice * 0.1;
-            }
-        }
+        total = this.applyDiscountCards(total, sncfPrice, passengers);
 
         return total;
     }
@@ -167,6 +136,32 @@ export class TrainTicketEstimator {
             temporaryPrice = this.applyDatePriceModifier(temporaryPrice, sncfPrice, tripRequest);
 
             total += temporaryPrice;
+        }
+
+        return total;
+    }
+
+    private applyDiscountCards(total: number, sncfPrice: number, passengers: Passenger[]) {
+        const isMinor = passengers.some((passenger) => passenger.age < 18)
+
+        if (passengers.length == 2) {
+            const isCouple = passengers.some((passenger) =>
+                passenger.discounts.includes(DiscountCard.Couple)
+            );
+
+            if (isCouple && !isMinor) {
+                total -= sncfPrice * 0.2 * 2;
+            }
+        }
+
+        if (passengers.length == 1) {
+            const isCouple = passengers.some((passenger) =>
+                passenger.discounts.includes(DiscountCard.HalfCouple)
+            );
+
+            if (isCouple && !isMinor) {
+                total -= sncfPrice * 0.1;
+            }
         }
 
         return total;
