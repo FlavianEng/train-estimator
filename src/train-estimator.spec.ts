@@ -126,7 +126,7 @@ describe("train estimator", function () {
             await expect(service.estimate(tripRequest)).resolves.toEqual(29.6);
         })
 
-        it("should increase by 100% if the ticket is bought four days befeore departure", async () => {
+        it("should increase by 100% if the ticket is bought four days before departure", async () => {
             const tripDetails = new TripDetails('Bordeaux', 'Paris', fiveDaysBeforeDate);
             const tripRequest = new TripRequest(tripDetails, [dummyPassenger]);
 
