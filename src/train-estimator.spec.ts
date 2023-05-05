@@ -35,8 +35,6 @@ describe("train estimator", function () {
     })
 
     describe('estimate', () => {
-        // beforeEach(() => {})
-
         it("should return 0 when there is no passengers", async () => {
             const tripDetails = new TripDetails('Bordeaux', 'Paris', thirtyOneDaysBeforeDate)
             const tripRequest = new TripRequest(tripDetails, []);

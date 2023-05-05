@@ -1,4 +1,11 @@
-import {ApiException, DiscountCard, InvalidTripInputException, TripDetails, TripRequest} from "./model/trip.request";
+import {
+    ApiException,
+    DiscountCard,
+    InvalidTripInputException,
+    Passenger,
+    TripDetails,
+    TripRequest
+} from "./model/trip.request";
 
 export class TrainTicketEstimator {
     private readonly baseApiUrl = 'https://sncf.com/api/train/estimate/price';
@@ -10,39 +17,8 @@ export class TrainTicketEstimator {
         const passengers = tripRequest.passengers;
 
         let total = 0;
-        let temporaryPrice = sncfPrice;
 
-        for (let i = 0; i < passengers.length; i++) {
-
-            if (passengers[i].age < 1) {
-                continue;
-            }
-
-            // Seniors
-            else if (passengers[i].age <= 17) {
-                temporaryPrice = sncfPrice * 0.6;
-            } else if (passengers[i].age >= 70) {
-                temporaryPrice = sncfPrice * 0.8;
-                if (passengers[i].discounts.includes(DiscountCard.Senior)) {
-                    temporaryPrice -= sncfPrice * 0.2;
-                }
-            } else {
-                temporaryPrice = sncfPrice * 1.2;
-            }
-
-            temporaryPrice = this.applyDatePriceModifier(temporaryPrice, sncfPrice, tripRequest);
-
-            if (passengers[i].age > 0 && passengers[i].age < 4) {
-                temporaryPrice = 9;
-            }
-
-            if (passengers[i].discounts.includes(DiscountCard.TrainStroke)) {
-                temporaryPrice = 1;
-            }
-
-            total += temporaryPrice;
-            temporaryPrice = sncfPrice;
-        }
+        total = this.definePriceDependingAgeAndDate(total, sncfPrice, tripRequest, passengers);
 
         if (passengers.length == 2) {
             let cp = false;
@@ -140,5 +116,59 @@ export class TrainTicketEstimator {
 
         temporaryPrice += sncfPrice;
         return temporaryPrice;
+    }
+
+    private applyAgePriceModifier(temporaryPrice: number, sncfPrice: number, passenger: Passenger) {
+        if (passenger.age <= 17) {
+            temporaryPrice = sncfPrice * 0.6;
+            return temporaryPrice;
+        }
+
+        if (passenger.age >= 70) {
+            temporaryPrice = sncfPrice * 0.8;
+
+            if (passenger.discounts.includes(DiscountCard.Senior)) {
+                temporaryPrice -= sncfPrice * 0.2;
+            }
+            return temporaryPrice;
+        }
+
+
+        temporaryPrice = sncfPrice * 1.2;
+        return temporaryPrice;
+    }
+
+    private hasFixedPrice(passenger: Passenger) {
+        return passenger.age < 4 || passenger.discounts.includes(DiscountCard.TrainStroke)
+    }
+
+    private definePriceDependingAgeAndDate(total: number, sncfPrice: number, tripRequest: TripRequest, passengers: Passenger[]) {
+        let temporaryPrice = sncfPrice;
+
+        for (let i = 0; i < passengers.length; i++) {
+            if (this.hasFixedPrice(passengers[i])) {
+                if (passengers[i].age < 1) {
+                    continue;
+                }
+
+                if (passengers[i].age > 0 && passengers[i].age < 4) {
+                    temporaryPrice = 9;
+                }
+
+                if (passengers[i].discounts.includes(DiscountCard.TrainStroke)) {
+                    temporaryPrice = 1;
+                }
+
+                total += temporaryPrice;
+                continue;
+            }
+
+            temporaryPrice = this.applyAgePriceModifier(temporaryPrice, sncfPrice, passengers[i]);
+            temporaryPrice = this.applyDatePriceModifier(temporaryPrice, sncfPrice, tripRequest);
+
+            total += temporaryPrice;
+        }
+
+        return total;
     }
 }
