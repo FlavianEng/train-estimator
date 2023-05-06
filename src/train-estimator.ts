@@ -9,6 +9,7 @@ import {
 
 export class TrainTicketEstimator {
     private readonly baseApiUrl = 'https://sncf.com/api/train/estimate/price';
+    private readonly childPrice = 9;
 
     async estimate(tripRequest: TripRequest): Promise<number> {
         this.validateTripRequest(tripRequest);
@@ -122,7 +123,7 @@ export class TrainTicketEstimator {
                 }
 
                 if (passengers[i].age > 0 && passengers[i].age < 4) {
-                    temporaryPrice = 9;
+                    temporaryPrice = this.childPrice;
                 }
 
                 if (passengers[i].discounts.includes(DiscountCard.TrainStroke)) {
@@ -143,6 +144,26 @@ export class TrainTicketEstimator {
     }
 
     private applyDiscountCards(total: number, sncfPrice: number, passengers: Passenger[]) {
+        if (passengers.some((passenger) => passenger.discounts.includes(DiscountCard.Family))) {
+            const familyLastNames = [...new Set(passengers.filter((passenger) => passenger.lastName && passenger.discounts.includes(DiscountCard.Family)).map((passenger) => passenger.lastName))];
+            const familyPassengers = passengers.filter((passenger) => passenger.age > 1 && familyLastNames.includes(passenger.lastName) && !passenger.discounts.includes(DiscountCard.TrainStroke));
+            
+            for (let i = 0; i < familyPassengers.length; i++) {
+                const passenger = familyPassengers[i];
+                if (passenger.age >= 70 && passenger.discounts.includes(DiscountCard.Senior)) {
+                    total += sncfPrice * 0.2;
+                }
+                if (passenger.age > 0 && passenger.age < 4) {
+                    total -= this.childPrice * 0.3;
+                }
+                if (passenger.age >= 4) {
+                    total -= sncfPrice * 0.3;
+                }
+            }
+    
+            return total;
+        }
+    
         const isMinor = passengers.some((passenger) => passenger.age < 18)
 
         if (passengers.length == 2) {
