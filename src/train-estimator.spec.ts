@@ -12,6 +12,8 @@ describe("train estimator", function () {
     const thirtyOneDaysBeforeDate = new Date(new Date().setDate(new Date().getDate() + 31));
     const sixDaysBeforeDate = new Date(new Date().setDate(new Date().getDate() + 6));
     const fiveDaysBeforeDate = new Date(new Date().setDate(new Date().getDate() + 5));
+    const sevenHoursBeforeDate = new Date(new Date().setHours(new Date().getHours() + 7));
+    const sixHoursBeforeDate = new Date(new Date().setHours(new Date().getHours() + 6));
 
     let dummyPassenger: Passenger;
     let validTripDetails: TripDetails;
@@ -110,11 +112,25 @@ describe("train estimator", function () {
 
             await expect(service.estimate(tripRequest)).resolves.toEqual(20);
         });
-
-        it("should have a 20%  discount if the ticket is bought thirty days before departure", async () => {
+    
+        it("should have a 20% discount if the ticket is bought thirty days before departure", async () => {
             const tripRequest = new TripRequest(validTripDetails, [dummyPassenger]);
-
+        
             await expect(service.estimate(tripRequest)).resolves.toEqual(20);
+        })
+    
+        it("should have a 20% discount if the ticket is bought 6 hours before departure", async () => {
+            const tripDetails = new TripDetails('Bordeaux', 'Paris', sixHoursBeforeDate);
+            const tripRequest = new TripRequest(tripDetails, [dummyPassenger]);
+        
+            await expect(service.estimate(tripRequest)).resolves.toEqual(20);
+        })
+    
+        it("should increase by 100% discount if the ticket is bought 7 hours before departure", async () => {
+            const tripDetails = new TripDetails('Bordeaux', 'Paris', sevenHoursBeforeDate);
+            const tripRequest = new TripRequest(tripDetails, [dummyPassenger]);
+        
+            await expect(service.estimate(tripRequest)).resolves.toEqual(44);
         })
 
         it("should increase by 30% if the ticket is bought five days before departure", async () => {

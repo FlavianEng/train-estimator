@@ -61,8 +61,9 @@ export class TrainTicketEstimator {
         const currentDate = new Date();
         const earlyPurchaseDate = currentDate.setDate(currentDate.getDate() + 30);
         const risePeriodPurchaseDate = currentDate.setDate(currentDate.getDate() - 25);
+        const lastHoursPurchaseDate = new Date().setHours(new Date().getHours() + 6);
 
-        if (tripRequest.details.when.getTime() >= earlyPurchaseDate) {
+        if (tripRequest.details.when.getTime() >= earlyPurchaseDate || tripRequest.details.when.getTime() <= lastHoursPurchaseDate) {
             temporaryPrice -= sncfPrice * 0.2;
 
             return temporaryPrice;
