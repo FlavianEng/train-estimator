@@ -1,11 +1,11 @@
 import {
-    ApiException,
-    DiscountCard,
-    InvalidTripInputException,
-    Passenger,
-    TripDetails,
-    TripRequest
-} from "./model/trip.request";
+  ApiException,
+  DiscountCard,
+  InvalidTripInputException,
+  Passenger,
+  TripDetails,
+  TripRequest,
+} from './model/trip.request';
 
 export class TrainTicketEstimator {
     private readonly baseApiUrl = 'https://sncf.com/api/train/estimate/price';
@@ -14,12 +14,21 @@ export class TrainTicketEstimator {
     async estimate(tripRequest: TripRequest): Promise<number> {
         this.validateTripRequest(tripRequest);
 
-        const sncfPrice = await this.getSncfPrice(tripRequest.details.from, tripRequest.details.to, tripRequest.details.when);
+        const sncfPrice = await this.getSncfPrice(
+            tripRequest.details.from,
+            tripRequest.details.to,
+            tripRequest.details.when
+        );
         const passengers = tripRequest.passengers;
 
         let total = 0;
 
-        total = this.definePriceDependingAgeAndDate(total, sncfPrice, tripRequest, passengers);
+        total = this.definePriceDependingAgeAndDate(
+            total,
+            sncfPrice,
+            tripRequest,
+            passengers
+        );
         total = this.applyDiscountCards(total, sncfPrice, passengers);
 
         return total;
@@ -31,24 +40,43 @@ export class TrainTicketEstimator {
         }
 
         if (tripRequest.passengers.some((passenger) => passenger.age < 0)) {
-            throw new InvalidTripInputException("Age is invalid");
+            throw new InvalidTripInputException('Age is invalid');
         }
 
         if (!tripRequest.details.from.trim().length) {
-            throw new InvalidTripInputException("Start city is invalid");
+            throw new InvalidTripInputException('Start city is invalid');
         }
 
         if (!tripRequest.details.to.trim().length) {
-            throw new InvalidTripInputException("Destination city is invalid");
+            throw new InvalidTripInputException('Destination city is invalid');
         }
 
-        if (tripRequest.details.when < new Date(new Date().getFullYear(), new Date().getMonth(), new Date().getDay(), 0, 0, 0)) {
-            throw new InvalidTripInputException("Date is invalid");
+        if (
+            tripRequest.details.when <
+            new Date(
+                new Date().getFullYear(),
+                new Date().getMonth(),
+                new Date().getDay(),
+                0,
+                0,
+                0
+            )
+        ) {
+            throw new InvalidTripInputException('Date is invalid');
         }
     }
 
-    private async getSncfPrice(from: TripDetails['from'], to: TripDetails['to'], when: TripDetails['when']) {
-        const sncfPrice = (await (await fetch(`${this.baseApiUrl}?from=${from}&to=${to}&date=${when}`)).json())?.price || -1;
+    private async getSncfPrice(
+        from: TripDetails['from'],
+        to: TripDetails['to'],
+        when: TripDetails['when']
+    ) {
+        const sncfPrice =
+            (
+                await (
+                    await fetch(`${this.baseApiUrl}?from=${from}&to=${to}&date=${when}`)
+                ).json()
+            )?.price || -1;
 
         if (sncfPrice === -1) {
             throw new ApiException();
@@ -57,28 +85,43 @@ export class TrainTicketEstimator {
         return sncfPrice;
     }
 
-    private applyDatePriceModifier(temporaryPrice: number, sncfPrice: number, tripRequest: TripRequest) {
+    private applyDatePriceModifier(
+        temporaryPrice: number,
+        sncfPrice: number,
+        tripRequest: TripRequest
+    ) {
         const dayInMilliseconds = 1000 * 3600 * 24;
         const currentDate = new Date();
         const earlyPurchaseDate = currentDate.setDate(currentDate.getDate() + 30);
-        const risePeriodPurchaseDate = currentDate.setDate(currentDate.getDate() - 25);
-        const lastHoursPurchaseDate = new Date().setHours(new Date().getHours() + 6);
+        const risePeriodPurchaseDate = currentDate.setDate(
+            currentDate.getDate() - 25
+        );
+        const lastHoursPurchaseDate = new Date().setHours(
+            new Date().getHours() + 6
+        );
 
-        if (tripRequest.details.when.getTime() >= earlyPurchaseDate || tripRequest.details.when.getTime() <= lastHoursPurchaseDate) {
+        if (
+            tripRequest.details.when.getTime() >= earlyPurchaseDate ||
+            tripRequest.details.when.getTime() <= lastHoursPurchaseDate
+        ) {
             temporaryPrice -= sncfPrice * 0.2;
 
             return temporaryPrice;
         }
 
-
         if (tripRequest.details.when.getTime() > risePeriodPurchaseDate) {
-            const dateBeforeDepartureInTime = Math.abs(tripRequest.details.when.getTime() - new Date().getTime());
-            const dateBeforeDepartureInDays = Math.ceil(dateBeforeDepartureInTime / dayInMilliseconds);
+            const dateBeforeDepartureInTime = Math.abs(
+                tripRequest.details.when.getTime() - new Date().getTime()
+            );
+            const dateBeforeDepartureInDays = Math.ceil(
+                dateBeforeDepartureInTime / dayInMilliseconds
+            );
 
             const sncfPriceRise = 0.02 * sncfPrice;
 
             const risePeriodBeforeDeparture = 20;
-            const risePeriodModifier = risePeriodBeforeDeparture - dateBeforeDepartureInDays;
+            const risePeriodModifier =
+                risePeriodBeforeDeparture - dateBeforeDepartureInDays;
 
             temporaryPrice += risePeriodModifier * sncfPriceRise;
 
@@ -89,7 +132,11 @@ export class TrainTicketEstimator {
         return temporaryPrice;
     }
 
-    private applyAgePriceModifier(temporaryPrice: number, sncfPrice: number, passenger: Passenger) {
+    private applyAgePriceModifier(
+        temporaryPrice: number,
+        sncfPrice: number,
+        passenger: Passenger
+    ) {
         if (passenger.age <= 17) {
             temporaryPrice = sncfPrice * 0.6;
             return temporaryPrice;
@@ -100,16 +147,23 @@ export class TrainTicketEstimator {
             return temporaryPrice;
         }
 
-
         temporaryPrice = sncfPrice * 1.2;
         return temporaryPrice;
     }
 
     private hasFixedPrice(passenger: Passenger) {
-        return passenger.age < 4 || passenger.discounts.includes(DiscountCard.TrainStroke)
+        return (
+            passenger.age < 4 ||
+            passenger.discounts.includes(DiscountCard.TrainStroke)
+        );
     }
 
-    private definePriceDependingAgeAndDate(total: number, sncfPrice: number, tripRequest: TripRequest, passengers: Passenger[]) {
+    private definePriceDependingAgeAndDate(
+        total: number,
+        sncfPrice: number,
+        tripRequest: TripRequest,
+        passengers: Passenger[]
+    ) {
         let temporaryPrice = sncfPrice;
 
         for (let i = 0; i < passengers.length; i++) {
@@ -130,8 +184,16 @@ export class TrainTicketEstimator {
                 continue;
             }
 
-            temporaryPrice = this.applyAgePriceModifier(temporaryPrice, sncfPrice, passengers[i]);
-            temporaryPrice = this.applyDatePriceModifier(temporaryPrice, sncfPrice, tripRequest);
+            temporaryPrice = this.applyAgePriceModifier(
+                temporaryPrice,
+                sncfPrice,
+                passengers[i]
+            );
+            temporaryPrice = this.applyDatePriceModifier(
+                temporaryPrice,
+                sncfPrice,
+                tripRequest
+            );
 
             total += temporaryPrice;
         }
@@ -139,12 +201,36 @@ export class TrainTicketEstimator {
         return total;
     }
 
-    private applyDiscountCards(total: number, sncfPrice: number, passengers: Passenger[]) {
+    private applyDiscountCards(
+        total: number,
+        sncfPrice: number,
+        passengers: Passenger[]
+    ) {
         let familyLastNames: string[] = [];
 
-        if (passengers.some((passenger) => passenger.discounts.includes(DiscountCard.Family))) {
-            familyLastNames = [...new Set(passengers.filter((passenger) => passenger.lastName && passenger.discounts.includes(DiscountCard.Family)).map((passenger) => passenger.lastName))];
-            const familyPassengers = passengers.filter((passenger) => passenger.age > 1 && familyLastNames.includes(passenger.lastName) && !passenger.discounts.includes(DiscountCard.TrainStroke));
+        if (
+            passengers.some((passenger) =>
+                passenger.discounts.includes(DiscountCard.Family)
+            )
+        ) {
+            familyLastNames = [
+                ...new Set(
+                    passengers
+                        .filter(
+                            (passenger) =>
+                                passenger.lastName &&
+                                passenger.discounts.includes(DiscountCard.Family)
+                        )
+                        .map((passenger) => passenger.lastName)
+                ),
+            ];
+      
+            const familyPassengers = passengers.filter(
+                (passenger) =>
+                    passenger.age > 1 &&
+                    familyLastNames.includes(passenger.lastName) &&
+                    !passenger.discounts.includes(DiscountCard.TrainStroke)
+            );
 
             for (const familyPassenger of familyPassengers) {
                 if (familyPassenger.age < 18) {
@@ -156,13 +242,17 @@ export class TrainTicketEstimator {
         }
 
         passengers
-            .filter((passenger) =>
-                !familyLastNames.includes(passenger.lastName) && passenger.age >= 70 && passenger.discounts.includes(DiscountCard.Senior))
+            .filter(
+                (passenger) =>
+                    !familyLastNames.includes(passenger.lastName) &&
+                    passenger.age >= 70 &&
+                    passenger.discounts.includes(DiscountCard.Senior)
+            )
             .forEach(() => {
                 total -= sncfPrice * 0.2;
-            })
+            });
 
-        const isMinor = passengers.some((passenger) => passenger.age < 18)
+        const isMinor = passengers.some((passenger) => passenger.age < 18);
 
         if (passengers.length == 2) {
             const isCouple = passengers.some((passenger) =>
