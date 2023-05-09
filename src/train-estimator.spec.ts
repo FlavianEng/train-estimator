@@ -8,6 +8,13 @@ import {
 } from './model/trip.request';
 import {TrainTicketEstimator} from './train-estimator';
 
+describe('Passenger', () => {
+    it('should have the correct last name', () => {
+        const passenger = new Passenger(25, [],);
+        expect(passenger.lastName).toEqual('');
+    });
+});
+
 describe('train estimator', function () {
     const thirtyOneDaysBeforeDate = new Date(
         new Date().setDate(new Date().getDate() + 31)
@@ -53,15 +60,31 @@ describe('train estimator', function () {
     });
 
     describe('estimate', () => {
-        it('should return 0 when there is no passengers', async () => {
+        it('should have an empty baseApiUrl', () => {
+            const descriptor = Object.getOwnPropertyDescriptor(service, 'baseApiUrl');
+            expect(descriptor?.value).toBe('https://sncf.com/api/train/estimate/price');
+        });
+    
+        it('should return 0 when passengers array is empty', async () => {
             const tripDetails = new TripDetails(
-                'Bordeaux',
-                'Paris',
-                thirtyOneDaysBeforeDate
+              'Bordeaux',
+              'Paris',
+              thirtyOneDaysBeforeDate
             );
             const tripRequest = new TripRequest(tripDetails, []);
-
-            await expect(service.estimate(tripRequest)).resolves.toEqual(0);
+        
+            expect(service['validateTripRequest'](tripRequest)).toBe(0);
+        });
+    
+        it('should throw InvalidTripInputException when start city is invalid', async () => {
+            const tripDetails = new TripDetails(
+              '     ',
+              'Paris',
+              thirtyOneDaysBeforeDate
+            );
+            const tripRequest = new TripRequest(tripDetails, [dummyPassenger]);
+        
+            expect(() => { service['validateTripRequest'](tripRequest) }).toThrowError(new InvalidTripInputException('Start city is invalid'));
         });
 
         it('should throw because start city is empty', async () => {
@@ -72,6 +95,17 @@ describe('train estimator', function () {
             ).rejects.toThrowError(
                 new InvalidTripInputException('Start city is invalid')
             );
+        });
+        
+        it('should throw InvalidTripInputException when destination city is invalid', async () => {
+            const tripDetails = new TripDetails(
+              'Bordeaux',
+              '     ',
+              thirtyOneDaysBeforeDate
+            );
+            const tripRequest = new TripRequest(tripDetails, [dummyPassenger]);
+        
+            expect(() => { service['validateTripRequest'](tripRequest) }).toThrowError(new InvalidTripInputException('Destination city is invalid'));
         });
 
         it('should throw because destination city is empty', async () => {
@@ -110,13 +144,34 @@ describe('train estimator', function () {
                 async () => await service.estimate(tripRequest)
             ).rejects.toThrowError(ApiException);
         });
-
+    
+        it('should throw InvalidTripInputException when passenger age is invalid', async () => {
+            const invalidPassengers1 = [
+                new Passenger(-1, []),
+                new Passenger(-2, []),
+            ]
+            const invalidPassengers2 = [
+                new Passenger(0, []),
+                new Passenger(1, []),
+            ]
+            
+            const tripRequest1 = new TripRequest(validTripDetails, invalidPassengers1);
+            const tripRequest2 = new TripRequest(validTripDetails, invalidPassengers2);
+            
+            
+            expect(() => { service['validateTripRequest'](tripRequest1) })
+              .toThrowError(new InvalidTripInputException('Age is invalid'));
+            
+            expect(() => { service['validateTripRequest'](tripRequest2) })
+              .toThrowError(new InvalidTripInputException('Age is invalid'));
+        });
+    
         it('should throw because passager age is less than 0', async () => {
             const invalidPassenger = new Passenger(-2, []);
             const tripRequest = new TripRequest(validTripDetails, [invalidPassenger]);
-
+        
             await expect(
-                async () => await service.estimate(tripRequest)
+              async () => await service.estimate(tripRequest)
             ).rejects.toThrowError(new InvalidTripInputException('Age is invalid'));
         });
 
@@ -209,6 +264,11 @@ describe('train estimator', function () {
             const tripRequest = new TripRequest(validTripDetails, [passenger]);
 
             await expect(service.estimate(tripRequest)).resolves.toEqual(9);
+        });
+    
+        it('should return false if a passenger is 4 yo', () => {
+            const passenger = new Passenger(4, []);
+            expect(service['hasFixedPrice'](passenger)).toBe(false);
         });
 
         it('should have a fixed ticket price if passenger is an employee', async () => {
