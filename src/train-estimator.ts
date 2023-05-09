@@ -97,10 +97,6 @@ export class TrainTicketEstimator {
 
         if (passenger.age >= 70) {
             temporaryPrice = sncfPrice * 0.8;
-
-            if (passenger.discounts.includes(DiscountCard.Senior)) {
-                temporaryPrice -= sncfPrice * 0.2;
-            }
             return temporaryPrice;
         }
 
@@ -144,26 +140,28 @@ export class TrainTicketEstimator {
     }
 
     private applyDiscountCards(total: number, sncfPrice: number, passengers: Passenger[]) {
+        let familyLastNames: string[] = [];
+
         if (passengers.some((passenger) => passenger.discounts.includes(DiscountCard.Family))) {
-            const familyLastNames = [...new Set(passengers.filter((passenger) => passenger.lastName && passenger.discounts.includes(DiscountCard.Family)).map((passenger) => passenger.lastName))];
+            familyLastNames = [...new Set(passengers.filter((passenger) => passenger.lastName && passenger.discounts.includes(DiscountCard.Family)).map((passenger) => passenger.lastName))];
             const familyPassengers = passengers.filter((passenger) => passenger.age > 1 && familyLastNames.includes(passenger.lastName) && !passenger.discounts.includes(DiscountCard.TrainStroke));
-            
-            for (let i = 0; i < familyPassengers.length; i++) {
-                const passenger = familyPassengers[i];
-                if (passenger.age >= 70 && passenger.discounts.includes(DiscountCard.Senior)) {
-                    total += sncfPrice * 0.2;
+
+            for (const familyPassenger of familyPassengers) {
+                if (familyPassenger.age < 18) {
+                    continue;
                 }
-                if (passenger.age > 0 && passenger.age < 4) {
-                    total -= this.childPrice * 0.3;
-                }
-                if (passenger.age >= 4) {
-                    total -= sncfPrice * 0.3;
-                }
+
+                total -= sncfPrice * 0.3;
             }
-    
-            return total;
         }
-    
+
+        passengers
+            .filter((passenger) =>
+                !familyLastNames.includes(passenger.lastName) && passenger.age >= 70 && passenger.discounts.includes(DiscountCard.Senior))
+            .forEach(() => {
+                total -= sncfPrice * 0.2;
+            })
+
         const isMinor = passengers.some((passenger) => passenger.age < 18)
 
         if (passengers.length == 2) {

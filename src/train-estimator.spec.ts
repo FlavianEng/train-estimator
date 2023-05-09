@@ -6,7 +6,7 @@ import {
     TripDetails,
     TripRequest
 } from "./model/trip.request";
-import { TrainTicketEstimator } from "./train-estimator";
+import {TrainTicketEstimator} from "./train-estimator";
 
 describe("train estimator", function () {
     const thirtyOneDaysBeforeDate = new Date(new Date().setDate(new Date().getDate() + 31));
@@ -112,24 +112,24 @@ describe("train estimator", function () {
 
             await expect(service.estimate(tripRequest)).resolves.toEqual(20);
         });
-    
+
         it("should have a 20% discount if the ticket is bought thirty days before departure", async () => {
             const tripRequest = new TripRequest(validTripDetails, [dummyPassenger]);
-        
+
             await expect(service.estimate(tripRequest)).resolves.toEqual(20);
         })
-    
+
         it("should have a 20% discount if the ticket is bought 6 hours before departure", async () => {
             const tripDetails = new TripDetails('Bordeaux', 'Paris', sixHoursBeforeDate);
             const tripRequest = new TripRequest(tripDetails, [dummyPassenger]);
-        
+
             await expect(service.estimate(tripRequest)).resolves.toEqual(20);
         })
-    
+
         it("should increase by 100% discount if the ticket is bought 7 hours before departure", async () => {
             const tripDetails = new TripDetails('Bordeaux', 'Paris', sevenHoursBeforeDate);
             const tripRequest = new TripRequest(tripDetails, [dummyPassenger]);
-        
+
             await expect(service.estimate(tripRequest)).resolves.toEqual(44);
         })
 
@@ -160,18 +160,18 @@ describe("train estimator", function () {
 
             await expect(service.estimate(tripRequest)).resolves.toEqual(1);
         })
-    
+
         it("should apply the couple discount", async () => {
             const passengerWithCoupleDiscount = new Passenger(28, [DiscountCard.Couple]);
             const tripRequest = new TripRequest(validTripDetails, [dummyPassenger, passengerWithCoupleDiscount]);
-        
+
             await expect(service.estimate(tripRequest)).resolves.toEqual(32);
         })
-    
+
         it("should apply the family discount", async () => {
             const passengerWithCoupleDiscount = new Passenger(28, [DiscountCard.Couple]);
             const tripRequest = new TripRequest(validTripDetails, [dummyPassenger, passengerWithCoupleDiscount]);
-        
+
             await expect(service.estimate(tripRequest)).resolves.toEqual(32);
         })
 
@@ -208,8 +208,8 @@ describe("train estimator", function () {
 
             await expect(service.estimate(tripRequest)).resolves.toEqual(8);
         })
-    
-        it("should have a 30% family discount on total price", function() {
+
+        it("should have a 30% family discount on total price", function () {
             const passengers = [
                 new Passenger(28, [DiscountCard.Family], 'Dupont'),
                 new Passenger(25, [], 'Dupont')
@@ -217,8 +217,8 @@ describe("train estimator", function () {
             const tripRequest = new TripRequest(validTripDetails, passengers);
             expect(service.estimate(tripRequest)).resolves.toEqual(28);
         });
-    
-        it("should have a 30% family discount for each family", function() {
+
+        it("should have a 30% family discount for each family", function () {
             const passengers = [
                 new Passenger(28, [DiscountCard.Family], 'Dupont'),
                 new Passenger(25, [], 'Dupont'),
@@ -227,10 +227,10 @@ describe("train estimator", function () {
                 dummyPassenger
             ]
             const tripRequest = new TripRequest(validTripDetails, passengers);
-            expect(service.estimate(tripRequest)).resolves.toEqual(68.3);
+            expect(service.estimate(tripRequest)).resolves.toEqual(71);
         });
-    
-        it("should have a 12.5% family discount on total price", function() {
+
+        it("should have a 12.5% family discount on total price", function () {
             const passengers = [
                 new Passenger(76, [DiscountCard.Family], 'Dupont'),
                 new Passenger(2, [], 'Martin'),
@@ -239,8 +239,8 @@ describe("train estimator", function () {
             const tripRequest = new TripRequest(validTripDetails, passengers);
             expect(service.estimate(tripRequest)).resolves.toEqual(35);
         });
-    
-        it ("should have a 70% discount on total price (senior + family + date)", function() {
+
+        it("should have a 70% discount on total price (senior + family + date)", function () {
             const passengers = [
                 new Passenger(73, [DiscountCard.Senior, DiscountCard.Family], 'Dupont'),
                 new Passenger(70, [DiscountCard.Senior], 'Dupont')
@@ -248,8 +248,8 @@ describe("train estimator", function () {
             const tripRequest = new TripRequest(validTripDetails, passengers);
             expect(service.estimate(tripRequest)).resolves.toEqual(12);
         });
-    
-        it ("should have a 50% discount on total price", function() {
+
+        it("should have a 50% discount on total price", function () {
             const passengers = [
                 new Passenger(73, [DiscountCard.Senior, DiscountCard.Family], 'Dupont'),
                 new Passenger(69, [], 'Dupont')
@@ -257,8 +257,8 @@ describe("train estimator", function () {
             const tripRequest = new TripRequest(validTripDetails, passengers);
             expect(service.estimate(tripRequest)).resolves.toEqual(20);
         });
-    
-        it ("should have a 30% family discount for the first passenger ", function() {
+
+        it("should have a 30% family discount for the first passenger ", function () {
             const passengers = [
                 new Passenger(28, [DiscountCard.Family], 'Dupont'),
                 new Passenger(25, [], 'Martin')
@@ -266,8 +266,8 @@ describe("train estimator", function () {
             const tripRequest = new TripRequest(validTripDetails, passengers);
             expect(service.estimate(tripRequest)).resolves.toEqual(34);
         });
-    
-        it ("should have a 30% family discount for the second passenger", function() {
+
+        it("should have a 30% family discount for the second passenger", function () {
             const passengers = [
                 new Passenger(28, [DiscountCard.Family, DiscountCard.TrainStroke], 'Dupont'),
                 new Passenger(25, [], 'Dupont')
