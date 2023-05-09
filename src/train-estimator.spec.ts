@@ -302,7 +302,7 @@ describe('train estimator', function () {
                 dummyPassenger,
             ];
             const tripRequest = new TripRequest(validTripDetails, passengers);
-            expect(service.estimate(tripRequest)).resolves.toEqual(65);
+            expect(service.estimate(tripRequest)).resolves.toEqual(71);
         });
 
         it('should have a 12.5% family discount on total price', function () {

@@ -39,7 +39,7 @@ export class TrainTicketEstimator {
             return 0;
         }
 
-        if (tripRequest.passengers.some((passenger) => passenger.age < 0)) {
+        if (tripRequest.passengers.some((passenger) => passenger.age <= 0)) {
             throw new InvalidTripInputException('Age is invalid');
         }
 
@@ -227,48 +227,41 @@ export class TrainTicketEstimator {
 
             const familyPassengers = passengers.filter(
                 (passenger) =>
-                    passenger.age >= 1 &&
+                    passenger.age >= 4 &&
                     familyLastNames.includes(passenger.lastName) &&
                     !passenger.discounts.includes(DiscountCard.TrainStroke)
             );
 
             total -= sncfPrice * 0.3 * familyPassengers.length;
         }
-
-        const hasFamilyDiscount = passengers.some((passenger) => familyLastNames.includes(passenger.lastName));
-        if (hasFamilyDiscount) {
-            return total;
-        }
-
-        passengers
-            .filter(
-                (passenger) =>
-                    passenger.age >= 70 &&
-                    passenger.discounts.includes(DiscountCard.Senior)
-            )
-            .forEach(() => {
-                total -= sncfPrice * 0.2;
-            });
-
-        const isMinor = passengers.some((passenger) => passenger.age < 18);
-
-        if (passengers.length == 2) {
-            const isCouple = passengers.some((passenger) =>
-                passenger.discounts.includes(DiscountCard.Couple)
-            );
-
-            if (isCouple && !isMinor) {
-                total -= sncfPrice * 0.2 * 2;
+        
+        for (const passenger of passengers) {
+            if (familyLastNames.includes(passenger.lastName)) {
+                continue;
             }
-        }
-
-        if (passengers.length == 1) {
-            const isCouple = passengers.some((passenger) =>
-                passenger.discounts.includes(DiscountCard.HalfCouple)
-            );
-
-            if (isCouple && !isMinor) {
-                total -= sncfPrice * 0.1;
+    
+            const isMinor = passengers.some((passenger) => passenger.age < 18);
+            
+            if (passenger.age >= 70 && passenger.discounts.includes(DiscountCard.Senior)) {
+                total -= sncfPrice * 0.2;
+            }
+    
+            if (passengers.length == 2) {
+                const isCouple = passengers.some((passenger) =>
+                  passenger.discounts.includes(DiscountCard.Couple)
+                );
+        
+                if (isCouple && !isMinor) {
+                    total -= sncfPrice * 0.2;
+                }
+            }
+    
+            if (passengers.length == 1) {
+                const isCouple = passenger.discounts.includes(DiscountCard.HalfCouple);
+        
+                if (isCouple && !isMinor) {
+                    total -= sncfPrice * 0.1;
+                }
             }
         }
 
