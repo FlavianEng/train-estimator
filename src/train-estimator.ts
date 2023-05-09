@@ -1,10 +1,10 @@
 import {
-  ApiException,
-  DiscountCard,
-  InvalidTripInputException,
-  Passenger,
-  TripDetails,
-  TripRequest,
+    ApiException,
+    DiscountCard,
+    InvalidTripInputException,
+    Passenger,
+    TripDetails,
+    TripRequest,
 } from './model/trip.request';
 
 export class TrainTicketEstimator {
@@ -205,7 +205,7 @@ export class TrainTicketEstimator {
         total: number,
         sncfPrice: number,
         passengers: Passenger[]
-    ) {
+    ): number {
         let familyLastNames: string[] = [];
 
         if (
@@ -224,27 +224,25 @@ export class TrainTicketEstimator {
                         .map((passenger) => passenger.lastName)
                 ),
             ];
-      
+
             const familyPassengers = passengers.filter(
                 (passenger) =>
-                    passenger.age > 1 &&
+                    passenger.age >= 1 &&
                     familyLastNames.includes(passenger.lastName) &&
                     !passenger.discounts.includes(DiscountCard.TrainStroke)
             );
 
-            for (const familyPassenger of familyPassengers) {
-                if (familyPassenger.age < 18) {
-                    continue;
-                }
+            total -= sncfPrice * 0.3 * familyPassengers.length;
+        }
 
-                total -= sncfPrice * 0.3;
-            }
+        const hasFamilyDiscount = passengers.some((passenger) => familyLastNames.includes(passenger.lastName));
+        if (hasFamilyDiscount) {
+            return total;
         }
 
         passengers
             .filter(
                 (passenger) =>
-                    !familyLastNames.includes(passenger.lastName) &&
                     passenger.age >= 70 &&
                     passenger.discounts.includes(DiscountCard.Senior)
             )
